@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Vault</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCESmmIiAIo2E-42S-YPUhLJbsYv8Mmbf8",
+  authDomain: "stronghold-tv.firebaseapp.com",
+  projectId: "stronghold-tv",
+  storageBucket: "stronghold-tv.firebasestorage.app",
+  messagingSenderId: "863782282925",
+  appId: "1:863782282925:web:384ff8188a88c21d50c824",
+  measurementId: "G-M882FBJDLK"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+</script>
+
+<style>
+body {
+  margin: 0;
+  background: #0d1117;
+  font-family: Arial, sans-serif;
+  color: white;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#otpScreen {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  background: #0d1117;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  z-index: 100;
+  top: 0;
+  left: 0;
+}
+
+.otp-box {
+  max-width: 400px;
+  width: 100%;
+  background: #151b2d;
+  border: 1px solid #253457;
+  border-radius: 14px;
+  padding: 30px;
+  text-align: center;
+}
+
+.otp-box h2 { margin-top: 0; color: #9bd7ff; }
+
+.otp-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  margin: 15px 0;
+  border-radius: 8px;
+  border: 1px solid #253457;
+  background: #1e1e1e;
+  color: white;
+  font-size: 16px;
+  text-align: center;
+}
+
+.otp-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  background: #4b6fc9;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.otp-btn:hover { background: #6d8df0; }
+
+#vaultApp {
+  display: none;
+  width: 100%;
+  height: 100vh;
+}
+
+.blocked-screen {
+  display: none;
+  width: 100%;
+  height: 100vh;
+  background: #0d1117;
+  color: #fff;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.blocked-box {
+  max-width: 720px;
+  width: 100%;
+  background: #151b2d;
+  border: 1px solid #253457;
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+}
+
+.left-sidebar {
+  width: 280px;
+  background: #151b2d;
+  border-right: 2px solid #253457;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 4px 0 12px rgba(0,0,0,0.25);
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.center-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #0d1117;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.brand-title {
+  font-size: 26px;
+  font-weight: bold;
+  text-align: center;
+  color: white;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.nav-btn {
+  padding: 14px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background: #4b6fc9;
+  color: white;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.nav-btn:hover { background: #6d8df0; transform: translateY(-2px); }
+
+.search-bar {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+  background: #1e1e1e;
+  color: white;
+  border: 1px solid #253457;
+}
+
+.letter-section { margin-bottom: 30px; }
+
+.letter-header {
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #253457;
+  text-transform: uppercase;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.grid-game-btn {
+  background: #1e1e1e;
+  border: 1px solid #253457;
+  padding: 15px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  color: white;
+  transition: all 0.2s ease;
+  text-align: center;
+  word-wrap: break-word;
+}
+
+.grid-game-btn:hover {
+  background: #4b6fc9;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+#announcement {
+  background: #1e1e1e;
+  border: 1px solid #253457;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+</style>
+</head>
+
+<body>
+
+<div id="otpScreen">
+  <div class="otp-box">
+    <h2>Enter Passcode</h2>
+    <p>Please enter your access code to enter The Vault.</p>
+    <input type="text" id="otpInput" class="otp-input" placeholder="Enter Code">
+    <button class="otp-btn" onclick="verifyOTP()">Unlock</button>
+    <p id="otpError" style="color: #ff4d4d; display: none; margin-top: 10px;">Invalid code or banned account.</p>
+  </div>
+</div>
+
+<div id="blockedScreen" class="blocked-screen">
+  <div class="blocked-box">
+    <h1>Vault Temporarily Disabled</h1>
+    <p>The Vault is currently paused. Check the announcements below for updates.</p>
+    <div id="blockedAnnouncement">Loading announcements...</div>
+  </div>
+</div>
+
+<div id="vaultApp">
+  <div class="left-sidebar">
+    <div class="brand-title">The Vault</div>
+    <div style="text-align: center; margin-bottom: 15px; color: #00ffcc; font-size: 14px;">
+      Welcome <span id="playerNameDisplay"></span>
+    </div>
+    <button class="nav-btn" onclick="openAboutBlankApp('https://www.grok.com')">🤖 AI</button>
+    <button class="nav-btn" onclick="openAboutBlankApp('https://cdn.jsdelivr.net/gh/imEric1606/TheVaultStash/TheVault/proxy.html')">🌐 Proxy</button>
+    <button class="nav-btn" onclick="openAboutBlankApp('https://cdn.jsdelivr.net/gh/imEric1606/TheVaultStash/TheVault/casino.html')">🎰 Casino</button>
+    <button class="nav-btn" onclick="openAboutBlankApp('https://cdn.jsdelivr.net/gh/imEric1606/TheVaultStash/AASINGLEFILE.html')">📦 Stash</button>
+    <button class="nav-btn" onclick="openAboutBlankApp('https://cdn.jsdelivr.net/gh/imEric1606/TheVaultStash/TheVault/soundboard.html')">🔊 Soundboard</button>
+  </div>
+
+  <div class="center-column">
+    <div id="announcement">Loading announcements...</div>
+    <input class="search-bar" id="searchInput" placeholder="Search for a game...">
+    <div id="sections-container"></div>
+  </div>
+</div>
+
+<script>
+window.files = [
+'cl1', 'cl10bullets', 'cl10minutestildawn', 'cl12minibattles', 'cl1on1soccer', 'cl1v1lol' // Paste full game array here
+];
+
+let currentUserId = localStorage.getItem("vaultUserId");
+let playTimeInterval = null;
+
+if (currentUserId) {
+  validateUserSession(currentUserId);
+}
+
+function verifyOTP() {
+  const code = document.getElementById("otpInput").value.trim();
+  if (!code) return;
+
+  db.collection("users").where("otp", "==", code).get().then(snapshot => {
+    if (!snapshot.empty) {
+      const userDoc = snapshot.docs[0];
+      const userData = userDoc.data();
+      
+      if (userData.banned) {
+        document.getElementById("otpError").innerText = "This account is banned.";
+        document.getElementById("otpError").style.display = "block";
+        return;
+      }
+
+      currentUserId = userDoc.id;
+      localStorage.setItem("vaultUserId", currentUserId);
+      
+      startVaultSession(userData.name);
+    } else {
+      document.getElementById("otpError").innerText = "Invalid access code.";
+      document.getElementById("otpError").style.display = "block";
+    }
+  }).catch(err => console.error(err));
+}
+
+function validateUserSession(uid) {
+  db.collection("users").doc(uid).get().then(doc => {
+    if (doc.exists) {
+      const data = doc.data();
+      if (!data.banned) {
+        startVaultSession(data.name);
+      } else {
+        localStorage.removeItem("vaultUserId");
+      }
+    } else {
+      localStorage.removeItem("vaultUserId");
+    }
+  });
+}
+
+function startVaultSession(name) {
+  document.getElementById("otpScreen").style.display = "none";
+  document.getElementById("playerNameDisplay").innerText = name;
+  db.collection("users").doc(currentUserId).update({ online: true });
+  
+  if (!playTimeInterval) {
+    playTimeInterval = setInterval(() => {
+      if (!document.hidden) {
+        db.collection("users").doc(currentUserId).update({
+          playTime: firebase.firestore.FieldValue.increment(1)
+        });
+      }
+    }, 60000);
+  }
+  
+  listenForBan();
+  checkSiteStatus();
+}
+
+function listenForBan() {
+  db.collection("users").doc(currentUserId).onSnapshot(doc => {
+    if (doc.exists && doc.data().banned) {
+      alert("You have been banned from The Vault.");
+      localStorage.removeItem("vaultUserId");
+      location.reload();
+    }
+  });
+}
+
+window.addEventListener("beforeunload", () => {
+  if (currentUserId) {
+    db.collection("users").doc(currentUserId).update({ online: false });
+  }
+});
+
+function openAboutBlankApp(url) {
+  let win = window.open('about:blank', '_blank');
+  if (!win) {
+    alert("Pop-ups are blocked! Please allow pop-ups for this site to play games.");
+    return;
+  }
+  let doc = win.document;
+  doc.body.style.margin = "0";
+  doc.body.style.height = "100vh";
+  doc.body.style.backgroundColor = "#000";
+  let iframe = doc.createElement("iframe");
+  iframe.style.border = "none";
+  iframe.style.width = "100%";
+  iframe.style.height = "100%";
+  iframe.style.margin = "0";
+  doc.body.appendChild(iframe);
+  const cacheBustUrl = `${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`;
+  if (/\.html($|[?#])/i.test(url)) {
+    fetch(cacheBustUrl).then(response => {
+      if (!response.ok) throw new Error(`Failed to load: ${response.status}`);
+      return response.text();
+    }).then(html => {
+      iframe.srcdoc = html;
+    }).catch(error => {
+      iframe.src = cacheBustUrl;
+    });
+  } else {
+    iframe.src = cacheBustUrl;
+  }
+}
+
+const searchInput = document.getElementById("searchInput");
+const sectionsContainer = document.getElementById("sections-container");
+
+function renderGamesGrid(query = "") {
+  sectionsContainer.innerHTML = "";
+  const filtered = window.files.filter(f => f.toLowerCase().includes(query.toLowerCase()));
+  const groups = {};
+  filtered.forEach(file => {
+    let nameToDisplay = file;
+    if (nameToDisplay.startsWith('cl') && nameToDisplay.length > 2) {
+      nameToDisplay = nameToDisplay.substring(2);
+    }
+    let firstChar = nameToDisplay.charAt(0).toUpperCase();
+    if (!/[A-Z]/.test(firstChar)) firstChar = "#";
+    if (!groups[firstChar]) groups[firstChar] = [];
+    groups[firstChar].push({ original: file, display: nameToDisplay });
+  });
+  Object.keys(groups).sort().forEach(letter => {
+    const section = document.createElement("div");
+    section.className = "letter-section";
+    const header = document.createElement("div");
+    header.className = "letter-header";
+    header.textContent = letter;
+    section.appendChild(header);
+    const grid = document.createElement("div");
+    grid.className = "game-grid";
+    groups[letter].forEach(game => {
+      const btn = document.createElement("button");
+      btn.className = "grid-game-btn";
+      btn.textContent = game.display;
+      btn.onclick = () => {
+        const normalizedFile = game.original.endsWith(".html") ? game.original : game.original + ".html";
+        const url = `https://cdn.jsdelivr.net/gh/imEric1606/TheVaultStash/UGS-Files/${encodeURIComponent(normalizedFile)}`;
+        openAboutBlankApp(url);
+      };
+      grid.appendChild(btn);
+    });
+    section.appendChild(grid);
+    sectionsContainer.appendChild(section);
+  });
+}
+
+renderGamesGrid("");
+searchInput.addEventListener("input", (e) => renderGamesGrid(e.target.value));
+
+function escapeHtml(value) {
+  return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function renderAnnouncement(text) {
+  const targets = [document.getElementById("announcement"), document.getElementById("blockedAnnouncement")];
+  targets.forEach(target => {
+    if(!target) return;
+    const lines = Array.isArray(text) ? text : [text];
+    target.innerHTML = `<strong style="display:block; margin-bottom:6px; color:#9bd7ff;">Announcements</strong>
+                        <ul style="margin:0; padding-left:18px;">
+                          ${lines.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
+                        </ul>`;
+  });
+}
+
+function checkSiteStatus() {
+  db.collection("config").doc("site").onSnapshot((snapshot) => {
+    const data = snapshot.data() || {};
+    const isEnabled = data.STATUS === true;
+    const app = document.getElementById("vaultApp");
+    const blocked = document.getElementById("blockedScreen");
+
+    if (isEnabled) {
+      if (app) app.style.display = "flex";
+      if (blocked) blocked.style.display = "none";
+    } else {
+      if (app) app.style.display = "none";
+      if (blocked) blocked.style.display = "flex";
+    }
+
+    const list = Array.isArray(data.announcements) ? data.announcements.map(item => String(item).trim()).filter(Boolean) : [];
+    if (!list.length) {
+      renderAnnouncement("No announcements right now.");
+    } else {
+      renderAnnouncement(list);
+    }
+  });
+}
+</script>
+</body>
+</html>
