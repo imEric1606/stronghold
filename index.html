@@ -100,6 +100,10 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px;
+  position: absolute;
+  z-index: 200;
+  top: 0;
+  left: 0;
 }
 
 .blocked-box {
@@ -228,14 +232,14 @@ body {
     <p>Please enter your access code to enter The Vault.</p>
     <input type="text" id="otpInput" class="otp-input" placeholder="Enter Code">
     <button class="otp-btn" onclick="verifyOTP()">Unlock</button>
-    <p id="otpError" style="color: #ff4d4d; display: none; margin-top: 10px;">Invalid code or banned account.</p>
+    <p id="otpError" style="color: #ff4d4d; display: none; margin-top: 10px;">Invalid code or banned account</p>
   </div>
 </div>
 
 <div id="blockedScreen" class="blocked-screen">
   <div class="blocked-box">
     <h1>Vault Temporarily Disabled</h1>
-    <p>The Vault is currently paused. Check the announcements below for updates.</p>
+    <p>The Vault is currently paused Check the announcements below for updates</p>
     <div id="blockedAnnouncement">Loading announcements...</div>
   </div>
 </div>
@@ -262,7 +266,7 @@ body {
 
 <script>
 window.files = [
-'cl1', 'cl10bullets', 'cl10minutestildawn', 'cl12minibattles', 'cl1on1soccer', 'cl1v1lol' // Paste full game array here
+'cl1', 'cl10bullets', 'cl10minutestildawn', 'cl12minibattles', 'cl1on1soccer', 'cl1v1lol'
 ];
 
 let currentUserId = localStorage.getItem("vaultUserId");
@@ -270,6 +274,8 @@ let playTimeInterval = null;
 
 if (currentUserId) {
   validateUserSession(currentUserId);
+} else {
+  checkSiteStatus();
 }
 
 function verifyOTP() {
@@ -282,17 +288,16 @@ function verifyOTP() {
       const userData = userDoc.data();
       
       if (userData.banned) {
-        document.getElementById("otpError").innerText = "This account is banned.";
+        document.getElementById("otpError").innerText = "This account is banned";
         document.getElementById("otpError").style.display = "block";
         return;
       }
 
       currentUserId = userDoc.id;
       localStorage.setItem("vaultUserId", currentUserId);
-      
       startVaultSession(userData.name);
     } else {
-      document.getElementById("otpError").innerText = "Invalid access code.";
+      document.getElementById("otpError").innerText = "Invalid access code";
       document.getElementById("otpError").style.display = "block";
     }
   }).catch(err => console.error(err));
@@ -306,10 +311,15 @@ function validateUserSession(uid) {
         startVaultSession(data.name);
       } else {
         localStorage.removeItem("vaultUserId");
+        currentUserId = null;
+        document.getElementById("otpScreen").style.display = "flex";
       }
     } else {
       localStorage.removeItem("vaultUserId");
+      currentUserId = null;
+      document.getElementById("otpScreen").style.display = "flex";
     }
+    checkSiteStatus();
   });
 }
 
@@ -335,7 +345,7 @@ function startVaultSession(name) {
 function listenForBan() {
   db.collection("users").doc(currentUserId).onSnapshot(doc => {
     if (doc.exists && doc.data().banned) {
-      alert("You have been banned from The Vault.");
+      alert("You have been banned from The Vault");
       localStorage.removeItem("vaultUserId");
       location.reload();
     }
@@ -351,7 +361,7 @@ window.addEventListener("beforeunload", () => {
 function openAboutBlankApp(url) {
   let win = window.open('about:blank', '_blank');
   if (!win) {
-    alert("Pop-ups are blocked! Please allow pop-ups for this site to play games.");
+    alert("Popups are blocked Please allow popups for this site");
     return;
   }
   let doc = win.document;
@@ -367,7 +377,7 @@ function openAboutBlankApp(url) {
   const cacheBustUrl = `${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`;
   if (/\.html($|[?#])/i.test(url)) {
     fetch(cacheBustUrl).then(response => {
-      if (!response.ok) throw new Error(`Failed to load: ${response.status}`);
+      if (!response.ok) throw new Error(`Failed to load ${response.status}`);
       return response.text();
     }).then(html => {
       iframe.srcdoc = html;
@@ -442,25 +452,24 @@ function renderAnnouncement(text) {
 
 function checkSiteStatus() {
   db.collection("config").doc("site").onSnapshot((snapshot) => {
-    const data = snapshot.data() || {};
-    const isEnabled = data.STATUS === true;
+    const data = snapshot.data() || { STATUS: true, announcements: [] };
+    const isEnabled = data.STATUS !== false;
+    
     const app = document.getElementById("vaultApp");
     const blocked = document.getElementById("blockedScreen");
 
     if (isEnabled) {
-      if (app) app.style.display = "flex";
-      if (blocked) blocked.style.display = "none";
+      if (currentUserId) {
+        app.style.display = "flex";
+      }
+      blocked.style.display = "none";
     } else {
-      if (app) app.style.display = "none";
-      if (blocked) blocked.style.display = "flex";
+      app.style.display = "none";
+      blocked.style.display = "flex";
+      document.getElementById("otpScreen").style.display = "none";
     }
 
-    const list = Array.isArray(data.announcements) ? data.announcements.map(item => String(item).trim()).filter(Boolean) : [];
-    if (!list.length) {
-      renderAnnouncement("No announcements right now.");
-    } else {
-      renderAnnouncement(list);
-    }
+    renderAnnouncement(data.announcements || []);
   });
 }
 </script>
