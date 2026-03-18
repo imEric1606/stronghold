@@ -3142,47 +3142,58 @@ function verifyOTP() {
 
  // Find user with this OTP
  db.collection("users").where("otp", "==", code).get().then(snapshot => {
- if (!snapshot.empty) {
- const userDoc = snapshot.docs[0];
- const userData = userDoc.data();
- 
- // Handle ban check BEFORE session start
- if (userData.banned) {
- localStorage.removeItem("vaultUserId"); // Clear cache if banned
- document.getElementById("bannedScreen").style.display = "flex";
- document.getElementById("otpScreen").style.display = "none";
- return;
- }
+   if (!snapshot.empty) {
+     const userDoc = snapshot.docs[0];
+     const userData = userDoc.data();
+     
+     // Handle ban check BEFORE session start
+     if (userData.banned) {
+       localStorage.removeItem("vaultUserId"); // Clear cache if banned
+       document.getElementById("bannedScreen").style.display = "flex";
+       document.getElementById("otpScreen").style.display = "none";
+       return;
+     }
 
- currentUserId = userDoc.id;
- localStorage.setItem("vaultUserId", currentUserId);
- startVaultSession(userData.name, userData.isMod); // Pass Mod status
- } else {
- document.getElementById("otpError").innerText = "Invalid access code";
- document.getElementById("otpError").style.display = "block";
- }
+     // === FIX: Explicitly set the token here ===
+     currentUserId = userDoc.id;
+     localStorage.setItem("vaultUserId", currentUserId); 
+     
+     startVaultSession(userData.name, userData.isMod); 
+   } else {
+     document.getElementById("otpError").innerText = "Invalid access code";
+     document.getElementById("otpError").style.display = "block";
+   }
  }).catch(err => console.error(err));
 }
 
 function validateUserSession(uid) {
  db.collection("users").doc(uid).get().then(doc => {
- if (doc.exists) {
- const data = doc.data();
- if (!data.banned) {
- startVaultSession(data.name, data.isMod); // Pass Mod status
- } else {
- // Immediate ban handling
- localStorage.removeItem("vaultUserId");
- currentUserId = null;
- document.getElementById("bannedScreen").style.display = "flex";
- document.getElementById("vaultApp").style.display = "none";
- }
- } else {
- localStorage.removeItem("vaultUserId");
- currentUserId = null;
- document.getElementById("otpScreen").style.display = "flex";
- }
- checkSiteStatus();
+   if (doc.exists) {
+     const data = doc.data();
+     if (!data.banned) {
+       // Valid user, start session immediately without OTP screen
+       startVaultSession(data.name, data.isMod); 
+     } else {
+       // User exists but is banned
+       localStorage.removeItem("vaultUserId");
+       currentUserId = null;
+       document.getElementById("bannedScreen").style.display = "flex";
+       document.getElementById("vaultApp").style.display = "none";
+       document.getElementById("otpScreen").style.display = "none";
+     }
+   } else {
+     // User ID in local storage doesn't exist in DB anymore (deleted)
+     localStorage.removeItem("vaultUserId");
+     currentUserId = null;
+     document.getElementById("otpScreen").style.display = "flex";
+     document.getElementById("vaultApp").style.display = "none";
+   }
+   checkSiteStatus();
+ }).catch(err => {
+     console.error("Session validation error:", err);
+     localStorage.removeItem("vaultUserId");
+     currentUserId = null;
+     document.getElementById("otpScreen").style.display = "flex";
  });
 }
 
