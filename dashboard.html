@@ -158,7 +158,10 @@ if(!myAdminId) {
  <tr>
  <th>Name</th>
  <th>Code</th>
- <th>Status</th> <th>Role</th> <th>Play Time</th>
+ <th>Status</th> 
+ <th>Role</th> 
+ <th>Play Time</th>
+ <th>Last Played</th>
  <th>Ban Control</th>
  <th>Remove</th>
  </tr>
@@ -280,7 +283,7 @@ function renderMemberListPresence() {
  tbody.innerHTML = "";
  
  if (!usersDataCache || usersDataCache.empty) {
- tbody.innerHTML = "<tr><td colspan='7' style='text-align:center;'>No members found</td></tr>";
+ tbody.innerHTML = "<tr><td colspan='8' style='text-align:center;'>No members found</td></tr>";
  return;
  }
 
@@ -313,6 +316,7 @@ function renderMemberListPresence() {
  <td style="color:${statusColor}">${statusText}</td> 
  <td style="color:${user.isMod ? '#33a8ff' : '#ccc'}">${user.isMod ? "Mod" : "Member"}</td>
  <td>${user.playTime || 0} min</td>
+ <td>${user.lastPlayed || "None"}</td>
  <td>
  <button class="${user.banned ? 'success-btn' : 'danger-btn'}" 
  onclick="toggleBan('${doc.id}', ${user.banned})">
