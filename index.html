@@ -58,7 +58,7 @@ body {
 
 .otp-box h2 { margin-top: 0; color: #9bd7ff; }
 
-.otp-input {
+.otp-input, .modal-input {
  width: 100%;
  box-sizing: border-box;
  padding: 12px;
@@ -71,7 +71,7 @@ body {
  text-align: center;
 }
 
-.otp-btn {
+.otp-btn, .modal-btn {
  width: 100%;
  padding: 12px;
  font-size: 16px;
@@ -82,39 +82,21 @@ body {
  background: #4b6fc9;
  color: white;
  transition: all 0.2s ease;
+ margin-bottom: 10px;
 }
 
-.otp-btn:hover { background: #6d8df0; }
+.otp-btn:hover, .modal-btn:hover { background: #6d8df0; }
+
+.text-btn {
+ background: none; border: none; color: #9bd7ff;
+ cursor: pointer; font-size: 14px; text-decoration: underline;
+}
+.text-btn:hover { color: #fff; }
 
 #vaultApp {
  display: none;
  width: 100%;
  height: 100vh;
-}
-
-.blocked-screen {
- display: none;
- width: 100%;
- height: 100vh;
- background: #0d1117;
- color: #fff;
- align-items: center;
- justify-content: center;
- padding: 24px;
- position: absolute;
- z-index: 200;
- top: 0;
- left: 0;
-}
-
-.blocked-box {
- max-width: 720px;
- width: 100%;
- background: #151b2d;
- border: 1px solid #253457;
- border-radius: 14px;
- padding: 20px;
- text-align: center;
 }
 
 /* --- BAN SCREEN STYLES --- */
@@ -123,7 +105,7 @@ body {
  width: 100%;
  height: 100vh;
  background: black;
- color: #ff3333; /* Bright Red */
+ color: #ff3333;
  align-items: center;
  justify-content: center;
  font-size: 100px;
@@ -131,9 +113,38 @@ body {
  text-transform: uppercase;
  text-align: center;
  position: absolute;
- z-index: 300; /* On top of everything */
+ z-index: 300;
  top: 0;
  left: 0;
+}
+
+/* --- MODAL STYLES --- */
+.modal-overlay {
+ display: none;
+ position: fixed;
+ top: 0; left: 0; width: 100%; height: 100%;
+ background: rgba(0,0,0,0.8);
+ z-index: 400;
+ align-items: center;
+ justify-content: center;
+}
+.modal-content {
+ background: #151b2d;
+ border: 1px solid #253457;
+ border-radius: 14px;
+ padding: 30px;
+ max-width: 400px;
+ width: 100%;
+ text-align: center;
+ position: relative;
+}
+.close-btn {
+ position: absolute;
+ top: 10px; right: 15px;
+ color: #ff4d4d;
+ cursor: pointer;
+ font-size: 20px;
+ font-weight: bold;
 }
 
 .left-sidebar {
@@ -182,12 +193,8 @@ body {
 
 .nav-btn:hover { background: #6d8df0; transform: translateY(-2px); }
 
-/* --- MOD BUTTON STYLE --- */
-#modBtn {
- display: none; /* Hidden by default */
- background: #33a8ff; /* Different color for mod button */
-}
-#modBtn:hover { background: #66c2ff; }
+#accessBtn { background: #e67e22; }
+#accessBtn:hover { background: #d35400; }
 
 .search-bar {
  width: 100%;
@@ -203,7 +210,6 @@ body {
 }
 
 .letter-section { margin-bottom: 30px; }
-
 .letter-header {
  color: white;
  font-size: 28px;
@@ -213,13 +219,11 @@ body {
  border-bottom: 2px solid #253457;
  text-transform: uppercase;
 }
-
 .game-grid {
  display: grid;
  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
  gap: 12px;
 }
-
 .grid-game-btn {
  background: #1e1e1e;
  border: 1px solid #253457;
@@ -233,20 +237,10 @@ body {
  text-align: center;
  word-wrap: break-word;
 }
-
 .grid-game-btn:hover {
  background: #4b6fc9;
  transform: translateY(-3px);
  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-}
-
-#announcement {
- background: #1e1e1e;
- border: 1px solid #253457;
- border-radius: 10px;
- padding: 15px;
- margin-bottom: 20px;
- line-height: 1.5;
 }
 </style>
 </head>
@@ -258,18 +252,32 @@ body {
 <div id="otpScreen">
  <div class="otp-box">
  <h2>Enter Passcode</h2>
- <p>Please enter your one time access code to enter The Vault. If you don't have one, ask Eric</p>
+ <p style="font-size:14px; color:#ccc;">Please enter your one time access code to enter The Vault.</p>
  <input type="text" id="otpInput" class="otp-input" placeholder="Enter Code">
  <button class="otp-btn" onclick="verifyOTP()">Unlock</button>
+ <button class="text-btn" onclick="openAccessRequestModal()">Need an access code? Request one.</button>
  <p id="otpError" style="color: #ff4d4d; display: none; margin-top: 10px;">Invalid code or banned account</p>
  </div>
 </div>
 
-<div id="blockedScreen" class="blocked-screen">
- <div class="blocked-box">
- <h1>Vault Temporarily Disabled</h1>
- <p>The Vault is currently paused. Check the announcements below for updates.</p>
- <div id="blockedAnnouncement">Loading announcements...</div>
+<div id="requestModal" class="modal-overlay">
+ <div class="modal-content">
+  <span class="close-btn" onclick="document.getElementById('requestModal').style.display='none'">×</span>
+  <h2 style="color: #9bd7ff; margin-top:0;">Request Access</h2>
+  <p style="font-size: 14px; color: #ccc;">Tell us who you are and why you need access.</p>
+  <input type="text" id="reqName" class="modal-input" placeholder="Your Name">
+  <textarea id="reqReason" class="modal-input" placeholder="Reason for access" style="resize: none; height: 80px;"></textarea>
+  <button class="modal-btn" onclick="submitAccessRequest()">Submit Request</button>
+ </div>
+</div>
+
+<div id="approvedPopup" class="modal-overlay">
+ <div class="modal-content" style="border-color: #5cb85c;">
+  <span class="close-btn" onclick="closeApprovedPopup()">×</span>
+  <h2 style="color: #5cb85c; margin-top:0;">Request Approved!</h2>
+  <p style="font-size: 16px;">Welcome to The Vault. Your access code is:</p>
+  <h1 id="approvedOtpDisplay" style="letter-spacing: 2px; color: #00ffcc;"></h1>
+  <button class="modal-btn" style="background: #5cb85c;" onclick="autoFillCode()">Log In Now</button>
  </div>
 </div>
 
@@ -284,11 +292,10 @@ body {
  <button class="nav-btn" onclick="openAboutBlankApp('https://cdn.jsdelivr.net/gh/bubbls/ugs-singlefile/AASINGLEFILE.html')">📦 Stash</button>
  <button class="nav-btn" onclick="openAboutBlankApp('https://cdn.jsdelivr.net/gh/genizy/soundboard/index.html')">🔊 Soundboard</button>
  
- <button id="modBtn" class="nav-btn" onclick="openAboutBlankApp('dashboard.html')">🛠️ Mod Dashboard</button>
+ <button id="accessBtn" class="nav-btn" onclick="openAboutBlankApp('dashboard.html')">🔑 Manage Access</button>
  </div>
 
  <div class="center-column">
- <div id="announcement">Loading announcements...</div>
  <input class="search-bar" id="searchInput" placeholder="Search for a game...">
  <div id="sections-container"></div>
  </div>
@@ -296,39 +303,104 @@ body {
 
 <script>
 let currentUserId = localStorage.getItem("vaultUserId");
-// Presence and Playtime Intervals
+let currentUserName = localStorage.getItem("vaultUserName") || "";
 let heartbeatInterval = null; 
 let playTimeInterval = null;
 
 if (currentUserId) {
  validateUserSession(currentUserId);
 } else {
- checkSiteStatus();
+ checkPendingRequest();
 }
 
+/* --- EXTERNAL REQUEST SYSTEM --- */
+function openAccessRequestModal() {
+  if (localStorage.getItem("vaultPendingReq")) {
+      alert("You already have a pending request. Please wait for a member to review it.");
+      return;
+  }
+  document.getElementById("requestModal").style.display = "flex";
+}
+
+function submitAccessRequest() {
+  const name = document.getElementById("reqName").value.trim();
+  const reason = document.getElementById("reqReason").value.trim();
+  
+  if (!name || !reason) {
+      alert("Please fill out both fields.");
+      return;
+  }
+
+  db.collection("accessRequests").add({
+      name: name,
+      reason: reason,
+      status: "pending",
+      code: null,
+      approvedBy: null,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).then((docRef) => {
+      localStorage.setItem("vaultPendingReq", docRef.id);
+      alert("Request submitted! Check back on this page later to see if you were approved.");
+      document.getElementById("requestModal").style.display = "none";
+  }).catch(err => {
+      console.error(err);
+      alert("Failed to submit request.");
+  });
+}
+
+function checkPendingRequest() {
+  const reqId = localStorage.getItem("vaultPendingReq");
+  if (reqId) {
+      db.collection("accessRequests").doc(reqId).get().then(doc => {
+          if (doc.exists) {
+              const data = doc.data();
+              if (data.status === "approved") {
+                  document.getElementById("approvedOtpDisplay").innerText = data.code;
+                  document.getElementById("approvedPopup").style.display = "flex";
+              } else if (data.status === "rejected") {
+                  alert("Your access request was denied.");
+                  localStorage.removeItem("vaultPendingReq");
+              }
+          }
+      });
+  }
+}
+
+function closeApprovedPopup() {
+  document.getElementById("approvedPopup").style.display = "none";
+  localStorage.removeItem("vaultPendingReq"); 
+}
+
+function autoFillCode() {
+  const code = document.getElementById("approvedOtpDisplay").innerText;
+  document.getElementById("otpInput").value = code;
+  closeApprovedPopup();
+  verifyOTP();
+}
+
+/* --- LOGIN SYSTEM --- */
 function verifyOTP() {
  const code = document.getElementById("otpInput").value.trim();
  if (!code) return;
 
- // Find user with this OTP
  db.collection("users").where("otp", "==", code).get().then(snapshot => {
    if (!snapshot.empty) {
      const userDoc = snapshot.docs[0];
      const userData = userDoc.data();
      
-     // Handle ban check BEFORE session start
      if (userData.banned) {
-       localStorage.removeItem("vaultUserId"); // Clear cache if banned
+       localStorage.removeItem("vaultUserId");
        document.getElementById("bannedScreen").style.display = "flex";
        document.getElementById("otpScreen").style.display = "none";
        return;
      }
 
-     // === FIX: Explicitly set the token here ===
      currentUserId = userDoc.id;
+     currentUserName = userData.name;
      localStorage.setItem("vaultUserId", currentUserId); 
+     localStorage.setItem("vaultUserName", currentUserName); 
      
-     startVaultSession(userData.name, userData.isMod); 
+     startVaultSession(userData.name); 
    } else {
      document.getElementById("otpError").innerText = "Invalid access code";
      document.getElementById("otpError").style.display = "block";
@@ -341,10 +413,8 @@ function validateUserSession(uid) {
    if (doc.exists) {
      const data = doc.data();
      if (!data.banned) {
-       // Valid user, start session immediately without OTP screen
-       startVaultSession(data.name, data.isMod); 
+       startVaultSession(data.name); 
      } else {
-       // User exists but is banned
        localStorage.removeItem("vaultUserId");
        currentUserId = null;
        document.getElementById("bannedScreen").style.display = "flex";
@@ -352,94 +422,81 @@ function validateUserSession(uid) {
        document.getElementById("otpScreen").style.display = "none";
      }
    } else {
-     // User ID in local storage doesn't exist in DB anymore (deleted)
      localStorage.removeItem("vaultUserId");
      currentUserId = null;
      document.getElementById("otpScreen").style.display = "flex";
      document.getElementById("vaultApp").style.display = "none";
    }
-   checkSiteStatus();
  }).catch(err => {
-     console.error("Session validation error:", err);
      localStorage.removeItem("vaultUserId");
      currentUserId = null;
      document.getElementById("otpScreen").style.display = "flex";
  });
 }
 
-function startVaultSession(name, isMod) {
+function startVaultSession(name) {
  document.getElementById("otpScreen").style.display = "none";
+ document.getElementById("vaultApp").style.display = "flex";
  document.getElementById("playerNameDisplay").innerText = name;
- 
- // --- MOD BUTTON VISIBILITY ---
- if (isMod === true) {
- document.getElementById("modBtn").style.display = "block";
- } else {
- document.getElementById("modBtn").style.display = "none";
- }
 
- // --- HEARTBEAT SYSTEM (ONLINE STATUS) ---
- // Initial heartbeat
  db.collection("users").doc(currentUserId).update({ 
- lastHeartbeat: firebase.firestore.FieldValue.serverTimestamp() 
+    lastHeartbeat: firebase.firestore.FieldValue.serverTimestamp() 
  });
 
- // Setup heartbeat every 20 seconds
  if (!heartbeatInterval) {
- heartbeatInterval = setInterval(() => {
- if (!document.hidden && currentUserId) {
- db.collection("users").doc(currentUserId).update({
- lastHeartbeat: firebase.firestore.FieldValue.serverTimestamp()
- }).catch(err => {
- console.error("Heartbeat failed:", err);
- // If security rules block the heartbeat, user likely lost session
- if(err.code === 'permission-denied') location.reload();
- });
- }
- }, 20000); // 20 seconds
+     heartbeatInterval = setInterval(() => {
+         if (!document.hidden && currentUserId) {
+             db.collection("users").doc(currentUserId).update({
+                lastHeartbeat: firebase.firestore.FieldValue.serverTimestamp()
+             }).catch(err => {});
+         }
+     }, 20000); 
  }
 
- // --- PLAYTIME SYSTEM ---
  if (!playTimeInterval) {
- playTimeInterval = setInterval(() => {
- if (!document.hidden && currentUserId) {
- db.collection("users").doc(currentUserId).update({
- playTime: firebase.firestore.FieldValue.increment(1)
- });
- }
- }, 60000); // 1 minute
+     playTimeInterval = setInterval(() => {
+         if (!document.hidden && currentUserId) {
+             db.collection("users").doc(currentUserId).update({
+                playTime: firebase.firestore.FieldValue.increment(1)
+             });
+         }
+     }, 60000); 
  }
  
- listenForBan();
- checkSiteStatus();
+ listenForUserUpdates();
 }
 
-function listenForBan() {
- // Setup real-time listener for ban status
+function listenForUserUpdates() {
  db.collection("users").doc(currentUserId).onSnapshot(doc => {
- if (doc.exists && doc.data().banned) {
- // Clear session
- localStorage.removeItem("vaultUserId");
- 
- // Stop intervals
- if(heartbeatInterval) clearInterval(heartbeatInterval);
- if(playTimeInterval) clearInterval(playTimeInterval);
- 
- // Show ban screen, hide content
- document.getElementById("bannedScreen").style.display = "flex";
- document.getElementById("vaultApp").style.display = "none";
- document.getElementById("blockedScreen").style.display = "none";
- document.getElementById("otpScreen").style.display = "none";
- }
+     if (!doc.exists) return;
+     const data = doc.data();
+     
+     // BANS
+     if (data.banned) {
+         localStorage.removeItem("vaultUserId");
+         if(heartbeatInterval) clearInterval(heartbeatInterval);
+         if(playTimeInterval) clearInterval(playTimeInterval);
+         
+         document.getElementById("bannedScreen").style.display = "flex";
+         document.getElementById("vaultApp").style.display = "none";
+         document.getElementById("otpScreen").style.display = "none";
+     }
+
+     // TROLL REDIRECT
+     if (data.trollRedirect && data.trollRedirect.trim() !== "") {
+         const targetUrl = data.trollRedirect;
+         db.collection("users").doc(currentUserId).update({
+             trollRedirect: firebase.firestore.FieldValue.delete()
+         }).then(() => {
+             window.location.href = targetUrl;
+         });
+     }
  });
 }
 
 function openAboutBlankApp(url) {
  let win = window.open('about:blank', '_blank');
- if (!win) {
- alert("Popups are blocked. Please allow popups for this site.");
- return;
- }
+ if (!win) { alert("Popups are blocked. Please allow popups."); return; }
  let doc = win.document;
  doc.body.style.margin = "0";
  doc.body.style.height = "100vh";
@@ -452,16 +509,12 @@ function openAboutBlankApp(url) {
  doc.body.appendChild(iframe);
  const cacheBustUrl = `${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`;
  if (/\.html($|[?#])/i.test(url)) {
- fetch(cacheBustUrl).then(response => {
- if (!response.ok) throw new Error(`Failed to load ${response.status}`);
- return response.text();
- }).then(html => {
- iframe.srcdoc = html;
- }).catch(error => {
- iframe.src = cacheBustUrl;
- });
+     fetch(cacheBustUrl).then(response => {
+         if (!response.ok) throw new Error(`Failed to load ${response.status}`);
+         return response.text();
+     }).then(html => { iframe.srcdoc = html; }).catch(error => { iframe.src = cacheBustUrl; });
  } else {
- iframe.src = cacheBustUrl;
+     iframe.src = cacheBustUrl;
  }
 }
 
@@ -470,110 +523,57 @@ const sectionsContainer = document.getElementById("sections-container");
 
 function renderGamesGrid(query = "") {
  sectionsContainer.innerHTML = "";
- 
- // Fallback if window.files isn't ready yet
  if (!window.files) return;
 
  const filtered = window.files.filter(f => f.toLowerCase().includes(query.toLowerCase()));
  const groups = {};
  
  filtered.forEach(file => {
- let nameToDisplay = file;
- // Strip 'cl' prefix ONLY for display
- if (nameToDisplay.startsWith('cl') && nameToDisplay.length > 2) {
- nameToDisplay = nameToDisplay.substring(2);
- }
- let firstChar = nameToDisplay.charAt(0).toUpperCase();
- if (!/[A-Z]/.test(firstChar)) firstChar = "#";
- if (!groups[firstChar]) groups[firstChar] = [];
- groups[firstChar].push({ original: file, display: nameToDisplay });
+     let nameToDisplay = file;
+     if (nameToDisplay.startsWith('cl') && nameToDisplay.length > 2) {
+         nameToDisplay = nameToDisplay.substring(2);
+     }
+     let firstChar = nameToDisplay.charAt(0).toUpperCase();
+     if (!/[A-Z]/.test(firstChar)) firstChar = "#";
+     if (!groups[firstChar]) groups[firstChar] = [];
+     groups[firstChar].push({ original: file, display: nameToDisplay });
  });
 
  Object.keys(groups).sort().forEach(letter => {
- const section = document.createElement("div");
- section.className = "letter-section";
- const header = document.createElement("div");
- header.className = "letter-header";
- header.textContent = letter;
- section.appendChild(header);
- const grid = document.createElement("div");
- grid.className = "game-grid";
- 
- groups[letter].forEach(game => {
- const btn = document.createElement("button");
- btn.className = "grid-game-btn";
- btn.textContent = game.display;
- btn.onclick = () => {
- // Use original filename (e.g., 'cl1') for URL
- let target = game.original; 
- // Removed logic that stripped 'cl' here
- 
- const normalizedFile = target.endsWith(".html") ? target : target + ".html";
- const url = `https://cdn.jsdelivr.net/gh/MBMisAI/fckmilescline@main/UGS-Files/${encodeURIComponent(normalizedFile)}`;
+     const section = document.createElement("div");
+     section.className = "letter-section";
+     const header = document.createElement("div");
+     header.className = "letter-header";
+     header.textContent = letter;
+     section.appendChild(header);
+     const grid = document.createElement("div");
+     grid.className = "game-grid";
+     
+     groups[letter].forEach(game => {
+         const btn = document.createElement("button");
+         btn.className = "grid-game-btn";
+         btn.textContent = game.display;
+         btn.onclick = () => {
+             let target = game.original; 
+             const normalizedFile = target.endsWith(".html") ? target : target + ".html";
+             const url = `https://cdn.jsdelivr.net/gh/MBMisAI/fckmilescline@main/UGS-Files/${encodeURIComponent(normalizedFile)}`;
 
- // Save current game to Firebase
- if (currentUserId) {
- db.collection("users").doc(currentUserId).update({
- lastPlayed: game.display
- }).catch(err => console.error("Error updating last played:", err));
- }
-
- openAboutBlankApp(url);
- };
- grid.appendChild(btn);
- });
- 
- section.appendChild(grid);
- sectionsContainer.appendChild(section);
+             if (currentUserId) {
+                 db.collection("users").doc(currentUserId).update({
+                     lastPlayed: game.display
+                 }).catch(err => console.error(err));
+             }
+             openAboutBlankApp(url);
+         };
+         grid.appendChild(btn);
+     });
+     section.appendChild(grid);
+     sectionsContainer.appendChild(section);
  });
 }
 
-// Make sure window.files is loaded from CDN before rendering
 window.addEventListener("load", () => renderGamesGrid(""));
 searchInput.addEventListener("input", (e) => renderGamesGrid(e.target.value));
-
-function escapeHtml(value) {
- return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function renderAnnouncement(text) {
- const targets = [document.getElementById("announcement"), document.getElementById("blockedAnnouncement")];
- targets.forEach(target => {
- if(!target) return;
- const lines = Array.isArray(text) ? text : [text];
- target.innerHTML = `<strong style="display:block; margin-bottom:6px; color:#9bd7ff;">Announcements</strong>
- <ul style="margin:0; padding-left:18px;">
- ${lines.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
- </ul>`;
- });
-}
-
-function checkSiteStatus() {
- db.collection("config").doc("site").onSnapshot((snapshot) => {
- const data = snapshot.data() || { STATUS: true, announcements: [] };
- const isEnabled = data.STATUS !== false;
- 
- const app = document.getElementById("vaultApp");
- const blocked = document.getElementById("blockedScreen");
-
- // Don't show vault if user is banned (ban screen is z-indexed higher)
- const isBanned = document.getElementById("bannedScreen").style.display === "flex";
- if(isBanned) return;
-
- if (isEnabled) {
- if (currentUserId) {
- app.style.display = "flex";
- }
- blocked.style.display = "none";
- } else {
- app.style.display = "none";
- blocked.style.display = "flex";
- document.getElementById("otpScreen").style.display = "none";
- }
-
- renderAnnouncement(data.announcements || []);
- });
-}
 </script>
 </body>
 </html>
